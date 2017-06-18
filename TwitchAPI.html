@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.js"></script>
+    <link href="https://fonts.googleapis.com/css?family=Arvo|Days+One|Gloria+Hallelujah|Orbitron|Play" rel="stylesheet">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <script src="https://cdn.rawgit.com/monkeecreate/jquery.simpleWeather/master/jquery.simpleWeather.min.js"></script>
+    <title>Random Quote Machine</title>
+    <style>
+        body{
+            background-color: black;
+            margin-top: 20px;
+            margin-left: auto;
+            margin-right: auto;
+            width : 50%;
+        }
+
+        .card {
+            margin-top: 1em;
+        }
+
+        .online {
+            background-color: PaleGreen;
+        }
+
+        .offline {
+            background-color: LightPink;
+        }
+        #all .active{
+            color : black;
+            background-color: #428bca;
+            padding : 5px 15px;
+        }
+    </style>
+    <script>
+        // Docs at http://simpleweatherjs.com
+        var twitterEndpoint = "https://cors-anywhere.herokuapp.com/https://wind-bow.gomix.me/twitch-api";
+
+        var list = "all";
+        var channels = ["ESL_SC2", "OgamingSC2", "cretetion", "freecodecamp", "storbeck", "habathcx", "RobotCaleb", "noobs2ninjas", "comster404", "clickerheroesbot"];
+
+        function createWarning(msg) {
+            return $('<div class="notification is-warning">' + msg + '</div>');
+        }
+
+        function createCard(isOnline, data) {
+            var card = '';
+            if (isOnline) {
+                card += '<div class="card is-fullwidth online">';
+            } else {
+                card += '<div class="card is-fullwidth offline">';
+            }
+            card += '<div class="card-content">';
+            card += '<div class="media">';
+            card += '<div class="media-left">';
+            card += '<figure class="image is-32x32"><img src="' + data.logo + '" alt="Image"></figure>';
+            card += '</div>';
+            card += '<div class="media-content">';
+            card += '<p class="title is-5">' + data.display_name + '</p>';
+            card += '<p class="subtitle is-6">';
+            card += '<a href=' + data.url + '>@' + data.name + '</a>';
+            card += '</p>';
+            card += '</div>';
+            card += '</div>';
+            card += '<div class="content"></div>';
+            if (data.status) {
+                card += data.status;
+            } else {
+                card += '<em>No status.</em>';
+            }
+            card += '</div>';
+            card += '</div>';
+            return $(card);
+        }
+
+        function setActive(id) {
+            $("#notifications").empty();
+            $("#channel-list").empty();
+
+            $("#all ").removeClass("active");
+            $("#online").removeClass("active");
+            $("#offline").removeClass("active");
+
+            $("#" + id).addClass("active");
+        }
+
+        function listChannel(isOnline, name) {
+            $.getJSON(twitterEndpoint + "/channels/" + name + "/", function(data) {
+                if (data.status === 404) {
+                    var warning = createWarning(data.message);
+                    $("#notifications").append(warning);
+                    return;
+                }
+                var card = createCard(isOnline, data);
+                $("#channel-list").append(card);
+            });
+        }
+
+        function updateList() {
+            channels.forEach(function(channel) {
+                $.getJSON(twitterEndpoint + "/streams/" + channel + "/", function(data) {
+                    if (data.stream) {
+                        // channel is online
+                        if (list === "online" || list === "all") {
+                            listChannel(true, channel);
+                        }
+                    } else {
+                        // channel is offline
+                        if (list === "offline" || list === "all") {
+                            listChannel(false, channel);
+                        }
+                    }
+                });
+            });
+        }
+
+        function allClicked() {
+            list = "all";
+            setActive("all");
+            updateList();
+        }
+
+        function onlineClicked() {
+            list = "online";
+            setActive("online");
+            updateList();
+        }
+
+        function offlineClicked() {
+            list = "offline";
+            setActive("offline");
+            updateList();
+        }
+
+        $(document).ready(function() {
+            updateList();
+        });
+
+
+    </script>
+</head>
+<body>
+<div class="container-fluid ">
+
+
+        <ul class="nav nav-tabs">
+            <li  class="nav-item active"><a id="all" class="nav-link active" onclick="allClicked()">All</a></li>
+            <li class="nav-item" ><a id="online" class="nav-link" onclick="onlineClicked()">Online</a></li>
+            <li class="nav-item" ><a id="offline" class="nav-link" onclick="offlineClicked()">Offline</a></li>
+        </ul>
+
+
+    <div class="columns is-multiline">
+        <div id="notifications" class="container">
+        </div>
+    </div>
+
+    <div class="columns is-multiline ">
+        <div id="channel-list" class="column is-half is-offset-one-quarter">
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>
